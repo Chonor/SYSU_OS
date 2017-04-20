@@ -181,6 +181,7 @@ thread_create (const char *name, int priority,
     return TID_ERROR;
 
   /* Initialize thread. */
+  t->ticks_blocked = 0;
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
@@ -205,9 +206,11 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
-
+  
   /* Add to run queue. */
   thread_unblock (t);
+  if (thread_current ()->priority < priority)
+    thread_yield ();
 
   return tid;
 }
@@ -359,6 +362,10 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  struct list_elem *e;
+  e=list_max (&ready_list, (list_less_func *) &thread_cmp_priority, NULL);
+  if(list_entry(e,struct thread,elem)->priority>new_priority)
+    thread_yield();
 }
 
 /* Returns the current thread's priority. */
@@ -488,9 +495,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-t->ticks_blocked = 0;
-  //list_push_back (&all_list, &t->allelem);
-  list_insert_ordered (&all_list, &t->allelem, (list_less_func *) &thread_cmp_priority, NULL);
+  list_push_back (&all_list, &t->allelem);
+  //list_insert_ordered (&all_list, &t->allelem, (list_less_func *) &thread_cmp_priority, NULL);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
