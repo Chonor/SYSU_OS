@@ -209,8 +209,7 @@ thread_create (const char *name, int priority,
   
   /* Add to run queue. */
   thread_unblock (t);
-  if (thread_current ()->priority < priority)
-    thread_yield ();
+  thread_preempt_priority();
 
   return tid;
 }
@@ -361,11 +360,50 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
-  if(list_entry(list_begin(&ready_list),struct thread,elem)->priority>new_priority)
-    thread_yield();
+  thread_change_priority(thread_current (),new_priority,false);
+}
+void
+thread_change_priority (struct thread *t,int priority,bool flag)
+{
+  enum intr_level old_level = intr_disable ();
+  if(flag)
+     t->priority=priority;
+  else 
+  { 
+     if(t->priority==t->old_priority)
+      t->priority=priority;
+    t->old_priority=priority;
+  }
+  if(t!=thread_current())
+    list_sort (&ready_list,&thread_cmp_priority,NULL);
+  intr_set_level (old_level);
+  thread_preempt_priority();
+}
+void
+thread_back_priority (struct thread *t)
+{
+  enum intr_level old_level = intr_disable ();
+  if(list_empty(&t->locks))
+    t->priority=t->old_priority;
+  else 
+  {
+    list_sort (&t->locks,&lock_cmp_priority,NULL);
+    t->priority=list_entry (list_begin(&t->locks), struct lock, elem)->priority;
+    t->priority=t->old_priority > t->priority? t->old_priority:t->priority;   
+  }
+  intr_set_level (old_level);
+  thread_preempt_priority();
 }
 
+void
+thread_preempt_priority ()
+{
+  enum intr_level old_level = intr_disable ();
+  if(list_entry(list_begin(&ready_list),struct thread,elem)
+                                    ->priority >thread_current()->priority)
+  thread_yield(); 
+  intr_set_level (old_level);
+}
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
@@ -407,7 +445,7 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
-
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -456,7 +494,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -488,11 +526,14 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (name != NULL);
 
   memset (t, 0, sizeof *t);
-  t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
+  t->status = THREAD_BLOCKED;
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->old_priority=priority;
   t->magic = THREAD_MAGIC;
+  t->lock_blocked=NULL;
+  list_init(&t->locks);
   list_push_back (&all_list, &t->allelem);
   //list_insert_ordered (&all_list, &t->allelem, (list_less_func *) &thread_cmp_priority, NULL);
 }
@@ -606,7 +647,6 @@ allocate_tid (void)
 
   return tid;
 }
-
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
