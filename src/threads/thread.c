@@ -360,20 +360,19 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_change_priority(thread_current (),new_priority,false);
+  struct thread *t = thread_current();
+  enum intr_level old_level = intr_disable ();
+  if(t->priority==t->old_priority||new_priority>t->priority)
+      t->priority=new_priority;
+    t->old_priority=new_priority;
+  intr_set_level (old_level);
+  thread_preempt_priority();
 }
 void
-thread_change_priority (struct thread *t,int priority,bool flag)
+thread_donate_priority (struct thread *t,int priority)
 {
   enum intr_level old_level = intr_disable ();
-  if(flag)
-     t->priority=priority;
-  else 
-  { 
-     if(t->priority==t->old_priority)
-      t->priority=priority;
-    t->old_priority=priority;
-  }
+  t->priority=priority;
   if(t!=thread_current())
     list_sort (&ready_list,&thread_cmp_priority,NULL);
   intr_set_level (old_level);
