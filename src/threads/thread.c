@@ -365,8 +365,8 @@ thread_set_priority (int new_priority)
   if(t->priority==t->old_priority||new_priority>t->priority)
       t->priority=new_priority;
     t->old_priority=new_priority;
+  thread_back_priority(t);  
   intr_set_level (old_level);
-  thread_preempt_priority();
 }
 void
 thread_donate_priority (struct thread *t,int priority)
