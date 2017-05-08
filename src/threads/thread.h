@@ -88,13 +88,13 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    int old_priority;                   /* Old_Priority. */
+    int old_priority;                   /* Old_Priority. ****NEW**** */
     int64_t ticks_blocked;              /* Blocked flag. */
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    struct list locks;                  /* List lock. */
+    struct list locks;                  /* List lock. ****NEW**** */
     struct lock *lock_blocked;          /* thread is blocked by these lock. */
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -139,7 +139,7 @@ int thread_get_priority (void);
 void thread_set_priority (int);
 void thread_donate_priority (struct thread *t,int priority);
 void thread_back_priority (struct thread *t);
-void thread_preempt_priority ();
+void thread_preempt_priority (void);
 bool thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,void *aux);
 
 int thread_get_nice (void);
