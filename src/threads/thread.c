@@ -360,15 +360,35 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  struct thread *t = thread_current();
-  enum intr_level old_level = intr_disable ();
+  struct thread *t = thread_current();  
+  /*enum intr_level old_level = intr_disable ();          //method one
   if(t->priority==t->old_priority||new_priority>t->priority)
       t->priority=new_priority;
     t->old_priority=new_priority;
   thread_back_priority(t);  
-  intr_set_level (old_level);
+  intr_set_level (old_level);*/
+
+  t->old_priority=new_priority;                           //method two
+  thread_change_priority(t);
 }
 void
+thread_change_priority(struct thread *t)                  //method two
+{
+  enum intr_level old_level = intr_disable ();
+  if(list_empty(&t->locks))
+    t->priority=t->old_priority;
+  else
+  {
+    list_sort (&t->locks,&lock_cmp_priority,NULL);
+    t->priority=list_entry (list_begin(&t->locks), struct lock, elem)->priority;
+    t->priority=t->old_priority > t->priority? t->old_priority:t->priority;
+  }
+  if(t!=thread_current())
+    list_sort (&ready_list,&thread_cmp_priority,NULL);
+  intr_set_level (old_level);
+  thread_preempt_priority();
+}
+/*void                                                    //method one
 thread_donate_priority (struct thread *t,int priority)
 {
   enum intr_level old_level = intr_disable ();
@@ -378,7 +398,7 @@ thread_donate_priority (struct thread *t,int priority)
   intr_set_level (old_level);
   thread_preempt_priority();
 }
-void
+void                                                      //method one
 thread_back_priority (struct thread *t)
 {
   enum intr_level old_level = intr_disable ();
@@ -392,7 +412,7 @@ thread_back_priority (struct thread *t)
   }
   intr_set_level (old_level);
   thread_preempt_priority();
-}
+}*/
 
 void
 thread_preempt_priority ()

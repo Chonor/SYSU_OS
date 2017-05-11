@@ -198,18 +198,18 @@ lock_acquire (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
-
   struct thread *cur=thread_current();
   struct lock *lock_=lock;
   enum intr_level old_level = intr_disable ();
   if(lock_->holder!= NULL){
     cur->lock_blocked = lock;    
-    if(lock_->priority < cur->priority)
+    if(lock_->priority < cur->priority) 
       lock_->priority = cur->priority;
     while (lock_ != NULL  && lock_->holder->priority < cur->priority)
     { 
       lock_->priority = cur->priority;
-      thread_donate_priority (lock_->holder,lock_->priority);
+      //thread_donate_priority (lock_->holder,lock_->priority); //method one
+      thread_change_priority (lock_->holder);                   //method two
       lock_ = lock_->holder->lock_blocked;
     }
   }
@@ -259,7 +259,8 @@ lock_release (struct lock *lock)
         list_begin(&lock->semaphore.waiters),struct thread,elem)->priority;
   list_remove (&lock->elem);
   intr_set_level (old_level);
-  thread_back_priority(thread_current());
+  //thread_back_priority(thread_current());                 //method one
+  thread_change_priority (thread_current());                //method two
 }
 
 /* Returns true if the current thread holds LOCK, false

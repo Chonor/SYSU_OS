@@ -137,8 +137,9 @@ void thread_foreach (thread_action_func *func, void *aux);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-void thread_donate_priority (struct thread *t,int priority);
-void thread_back_priority (struct thread *t);
+void thread_change_priority(struct thread *t);                  //method two
+//void thread_donate_priority (struct thread *t,int priority);  //method one
+//void thread_back_priority (struct thread *t);                 //method one
 void thread_preempt_priority (void);
 bool thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,void *aux);
 
