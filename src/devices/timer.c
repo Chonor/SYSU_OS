@@ -170,13 +170,25 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  if(thread_mlfqs)
+  {
+    renew_running_recent_cpu(thread_current());
+    if(ticks % TIMER_FREQ == 0)
+    {
+      renew_load_avg();
+      thread_foreach (renew_recent_cpu, NULL);
+    }
+    else if(ticks % 4 == 0)
+      thread_foreach (renew_priority, NULL);
+    
+  }
   thread_foreach (blocked_thread_check, NULL);
 }
 

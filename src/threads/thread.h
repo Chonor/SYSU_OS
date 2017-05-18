@@ -89,6 +89,8 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int old_priority;                   /* Old_Priority. ****NEW**** */
+    int nice;
+    int recent_cpu;
     int64_t ticks_blocked;              /* Blocked flag. */
     struct list_elem allelem;           /* List element for all threads list. */
 
@@ -119,7 +121,7 @@ void thread_print_stats (void);
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
-void blocked_thread_check (struct thread *t, void *aux UNUSED);
+void blocked_thread_check (struct thread *t, void *aux);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
@@ -147,5 +149,8 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-
+void renew_running_recent_cpu(struct thread *t);
+void renew_recent_cpu(struct thread *t,void *aux);
+void renew_load_avg(void);
+void renew_priority(struct thread*t,void *aux);
 #endif /* threads/thread.h */
