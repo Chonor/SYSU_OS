@@ -89,11 +89,8 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int old_priority;                   /* Old_Priority. ****NEW**** */
-<<<<<<< HEAD
     int nice;
     int recent_cpu;
-=======
->>>>>>> 58e3c10643785927fe99061a07a4f78c74910792
     int64_t ticks_blocked;              /* Blocked flag. */
     struct list_elem allelem;           /* List element for all threads list. */
 
@@ -142,14 +139,9 @@ void thread_foreach (thread_action_func *func, void *aux);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-<<<<<<< HEAD
 void thread_change_priority(struct thread *t);                  //method two
 //void thread_donate_priority (struct thread *t,int priority);  //method one
 //void thread_back_priority (struct thread *t);                 //method one
-=======
-void thread_donate_priority (struct thread *t,int priority);
-void thread_back_priority (struct thread *t);
->>>>>>> 58e3c10643785927fe99061a07a4f78c74910792
 void thread_preempt_priority (void);
 bool thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,void *aux);
 
