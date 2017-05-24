@@ -209,8 +209,8 @@ lock_acquire (struct lock *lock)
     while (lock_ != NULL  && lock_->holder->priority < cur->priority)
     { 
       lock_->priority = cur->priority;
-      //thread_donate_priority (lock_->holder,lock_->priority); //method one
-      thread_change_priority (lock_->holder);                   //method two
+      lock_->holder->list_lock_is_sorted=0;
+      thread_change_priority (lock_->holder);                   
       lock_ = lock_->holder->lock_blocked;
     }
   }

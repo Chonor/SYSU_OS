@@ -24,6 +24,20 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+#define FP_SHIFT_AMOUNT 16
+#define INT_TO_FP(A) ((int)(A << FP_SHIFT_AMOUNT))
+#define FP_TO_INT(A) (A >> FP_SHIFT_AMOUNT)
+#define FP_TO_INT_ROUND(A) (A >= 0 ? ((A + (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT) \
+                          : ((A - (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT))
+#define FP_ADD(A,B) (A + B)
+#define FP_ADD_INT(A,B) (A + (B << FP_SHIFT_AMOUNT))
+#define FP_SUB(A,B) (A - B)
+#define FP_SUB_INT(A,B) (A - (B << FP_SHIFT_AMOUNT))
+#define FP_MUL(A,B) ((int)(((int64_t) A) * B >> FP_SHIFT_AMOUNT))
+#define FP_MUL_INT(A,B) (A * B)
+#define FP_DIV(A,B) ((int)((((int64_t) A) << FP_SHIFT_AMOUNT) / B))
+#define FP_DIV_INT(A,B) (A / B)
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -98,6 +112,7 @@ struct thread
     struct list_elem elem;              /* List element. */
     struct list locks;                  /* List lock. ****NEW**** */
     struct lock *lock_blocked;          /* thread is blocked by these lock. */
+    bool list_lock_is_sorted;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -139,11 +154,10 @@ void thread_foreach (thread_action_func *func, void *aux);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-void thread_change_priority(struct thread *t);                  //method two
-//void thread_donate_priority (struct thread *t,int priority);  //method one
-//void thread_back_priority (struct thread *t);                 //method one
+void thread_change_priority(struct thread *t);                
 void thread_preempt_priority (void);
 bool thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,void *aux);
+void thread_sort_priority(void);
 
 int thread_get_nice (void);
 void thread_set_nice (int);

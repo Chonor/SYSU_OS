@@ -15,20 +15,6 @@
 #include "userprog/process.h"
 #endif
 
-#define FP_SHIFT_AMOUNT 16
-#define INT_TO_FP(A) ((int)(A << FP_SHIFT_AMOUNT))
-#define FP_TO_INT(A) (A >> FP_SHIFT_AMOUNT)
-#define FP_TO_INT_ROUND(A) (A >= 0 ? ((A + (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT) \
-                          : ((A - (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT))
-#define FP_ADD(A,B) (A + B)
-#define FP_ADD_INT(A,B) (A + (B << FP_SHIFT_AMOUNT))
-#define FP_SUB(A,B) (A - B)
-#define FP_SUB_INT(A,B) (A - (B << FP_SHIFT_AMOUNT))
-#define FP_MUL(A,B) ((int)(((int64_t) A) * B >> FP_SHIFT_AMOUNT))
-#define FP_MUL_INT(A,B) (A * B)
-#define FP_DIV(A,B) ((int)((((int64_t) A) << FP_SHIFT_AMOUNT) / B))
-#define FP_DIV_INT(A,B) (A / B)
-
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -348,7 +334,6 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    //list_push_back(&ready_list, &cur->elem)
     list_insert_ordered (&ready_list, &cur->elem, (list_less_func *) &thread_cmp_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
@@ -378,32 +363,30 @@ thread_set_priority (int new_priority)
 {
 
   struct thread *t = thread_current();  
-  /*enum intr_level old_level = intr_disable ();          //method one
-  if(t->priority==t->old_priority||new_priority>t->priority)
-      t->priority=new_priority;
-    t->old_priority=new_priority;
-  thread_back_priority(t);  
-  intr_set_level (old_level);*/
   if(thread_mlfqs)
   {
     t->priority=new_priority;
-    thread_yield();
+    thread_preempt_priority();
   }
   else
   {
-    t->old_priority=new_priority;                           //method two
+    t->old_priority=new_priority;                      
     thread_change_priority(t);
   }
 }
 void
-thread_change_priority(struct thread *t)                  //method two
+thread_change_priority(struct thread *t)              
 {
   enum intr_level old_level = intr_disable ();
   if(list_empty(&t->locks))
     t->priority=t->old_priority;
   else
   {
-    list_sort (&t->locks,&lock_cmp_priority,NULL);
+    if(!t->list_lock_is_sorted)
+    {
+      list_sort (&t->locks,&lock_cmp_priority,NULL);
+      t->list_lock_is_sorted=1;
+    }
     t->priority=list_entry (list_begin(&t->locks), struct lock, elem)->priority;
     t->priority=t->old_priority > t->priority? t->old_priority:t->priority;
   }
@@ -412,32 +395,6 @@ thread_change_priority(struct thread *t)                  //method two
   intr_set_level (old_level);
   thread_preempt_priority();
 }
-/*void                                                    //method one
-thread_donate_priority (struct thread *t,int priority)
-{
-  enum intr_level old_level = intr_disable ();
-  t->priority=priority;
-  if(t!=thread_current())
-    list_sort (&ready_list,&thread_cmp_priority,NULL);
-  intr_set_level (old_level);
-  thread_preempt_priority();
-}
-void                                                      //method one
-thread_back_priority (struct thread *t)
-{
-  enum intr_level old_level = intr_disable ();
-  if(list_empty(&t->locks))
-    t->priority=t->old_priority;
-  else 
-  {
-    list_sort (&t->locks,&lock_cmp_priority,NULL);
-    t->priority=list_entry (list_begin(&t->locks), struct lock, elem)->priority;
-    t->priority=t->old_priority > t->priority? t->old_priority:t->priority;   
-  }
-  intr_set_level (old_level);
-  thread_preempt_priority();
-}*/
-
 void
 thread_preempt_priority ()
 {
@@ -457,6 +414,10 @@ bool
 thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,void *aux UNUSED)
 {
   return list_entry(elem1,struct thread,elem)->priority > list_entry(elem2,struct thread,elem)->priority;
+}
+void thread_sort_priority(void)
+{
+  list_sort (&ready_list,&thread_cmp_priority,NULL);
 }
 /* Sets the current thread's nice value to NICE. */
 void
@@ -604,8 +565,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->lock_blocked=NULL;
   list_init(&t->locks);
+  t->list_lock_is_sorted=0;
   list_push_back (&all_list, &t->allelem);
-  //list_insert_ordered (&all_list, &t->allelem, (list_less_func *) &thread_cmp_priority, NULL);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
