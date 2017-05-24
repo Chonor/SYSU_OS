@@ -387,7 +387,7 @@ thread_set_priority (int new_priority)
   if(thread_mlfqs)
   {
     t->priority=new_priority;
-    thread_preempt_priority();
+    thread_yield();
   }
   else
   {
@@ -488,14 +488,15 @@ thread_get_recent_cpu (void)
 void 
 renew_running_recent_cpu(struct thread *t)
 {
+  if(t == idle_thread)return;
   t->recent_cpu = FP_ADD_INT (t->recent_cpu, 1);
 }
 void 
 renew_recent_cpu(struct thread *t,void *aux UNUSED)
 {
+  if(t == idle_thread)return;
   t->recent_cpu = FP_ADD_INT (FP_MUL (FP_DIV (FP_MUL_INT (load_avg, 2),\
           FP_ADD_INT (FP_MUL_INT (load_avg, 2), 1)), t->recent_cpu), t->nice);
-  renew_priority (t,NULL);
 }
 void 
 renew_load_avg(void)
@@ -507,6 +508,7 @@ renew_load_avg(void)
 void 
 renew_priority(struct thread*t,void *aux UNUSED)
 {
+  if(t == idle_thread)return;
   t->priority = FP_TO_INT (FP_SUB_INT (FP_SUB (INT_TO_FP (PRI_MAX), \
                         FP_DIV_INT (t->recent_cpu, 4)), 2 * t->nice));
   t->priority = t->priority < PRI_MIN ? PRI_MIN : t->priority;
