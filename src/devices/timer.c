@@ -177,6 +177,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  thread_foreach (blocked_thread_check, NULL);
   if(thread_mlfqs)
   {
     renew_running_recent_cpu(thread_current());
@@ -185,11 +186,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
       renew_load_avg();
       thread_foreach (renew_recent_cpu, NULL);
     }
-    else if(ticks % 4 == 0)
+    if(ticks % 4 == 0)
       thread_foreach (renew_priority, NULL);
-    
+    thread_sort_priority();
   }
-  thread_foreach (blocked_thread_check, NULL);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

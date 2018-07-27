@@ -14,7 +14,7 @@
 #include "threads/init.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-
+#include "devices/timer.h"
 static thread_func acquire1_thread_func;
 static thread_func acquire2_thread_func;
 
@@ -31,10 +31,14 @@ test_priority_donate_one (void)
 
   lock_init (&lock);
   lock_acquire (&lock);
-  thread_create ("acquire1", PRI_DEFAULT + 1, acquire1_thread_func, &lock);
+  thread_create ("acquire1", PRI_DEFAULT -5, acquire1_thread_func, &lock);
+  printf("sleep\n");
+  timer_sleep(1);
+  printf("unsleep\n");
+  thread_set_priority(20);
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 1, thread_get_priority ());
-  thread_create ("acquire2", PRI_DEFAULT + 2, acquire2_thread_func, &lock);
+  thread_create ("acquire2", PRI_DEFAULT -6, acquire2_thread_func, &lock);
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 2, thread_get_priority ());
   lock_release (&lock);
@@ -46,9 +50,11 @@ static void
 acquire1_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  printf("26 begin\n");
   lock_acquire (lock);
+printf("26 using lock \n");
   msg ("acquire1: got the lock");
+
   lock_release (lock);
   msg ("acquire1: done");
 }
@@ -58,8 +64,5 @@ acquire2_thread_func (void *lock_)
 {
   struct lock *lock = lock_;
 
-  lock_acquire (lock);
-  msg ("acquire2: got the lock");
-  lock_release (lock);
-  msg ("acquire2: done");
+  printf("********\n");
 }

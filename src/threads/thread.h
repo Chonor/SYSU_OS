@@ -112,7 +112,6 @@ struct thread
     struct list_elem elem;              /* List element. */
     struct list locks;                  /* List lock. ****NEW**** */
     struct lock *lock_blocked;          /* thread is blocked by these lock. */
-    bool list_lock_is_sorted;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

@@ -361,7 +361,6 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-
   struct thread *t = thread_current();  
   if(thread_mlfqs)
   {
@@ -382,11 +381,7 @@ thread_change_priority(struct thread *t)
     t->priority=t->old_priority;
   else
   {
-    if(!t->list_lock_is_sorted)
-    {
-      list_sort (&t->locks,&lock_cmp_priority,NULL);
-      t->list_lock_is_sorted=1;
-    }
+    list_sort (&t->locks,&lock_cmp_priority,NULL);
     t->priority=list_entry (list_begin(&t->locks), struct lock, elem)->priority;
     t->priority=t->old_priority > t->priority? t->old_priority:t->priority;
   }
@@ -415,7 +410,8 @@ thread_cmp_priority(const struct list_elem *elem1,const struct list_elem *elem2,
 {
   return list_entry(elem1,struct thread,elem)->priority > list_entry(elem2,struct thread,elem)->priority;
 }
-void thread_sort_priority(void)
+void 
+thread_sort_priority(void)
 {
   list_sort (&ready_list,&thread_cmp_priority,NULL);
 }
@@ -565,7 +561,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->lock_blocked=NULL;
   list_init(&t->locks);
-  t->list_lock_is_sorted=0;
   list_push_back (&all_list, &t->allelem);
 }
 
